@@ -13,7 +13,7 @@ export interface SpecSection {
   title: string;
   content: string;
   url: string;
-  spec: "classic" | "bidi";
+  spec: string;
   vector?: number[];
   distance?: number;
 }
@@ -63,7 +63,7 @@ export class Store {
       title: r.title as string,
       content: r.content as string,
       url: r.url as string,
-      spec: r.spec as "classic" | "bidi",
+      spec: r.spec as string,
     };
   }
 
@@ -82,7 +82,7 @@ export class Store {
       title: r.title as string,
       content: r.content as string,
       url: r.url as string,
-      spec: r.spec as "classic" | "bidi",
+      spec: r.spec as string,
       distance: r._distance
     }));
   }
