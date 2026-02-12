@@ -84,3 +84,42 @@ The server exposes the following tools:
 - **`src/tools/webdriver.ts`**: Defines the MCP tools for searching and querying the data.
 - **`src/lib/store.ts`**: Handles interactions with LanceDB.
 - **`src/lib/gemini.ts`**: Handles interactions with the Google Generative AI API.
+
+## Adding a New Specification
+
+To add a new specification that contains WebDriver BiDi or Classic endpoints, follow these steps:
+
+1.  **Open `scripts/ingest-specs.ts`.**
+2.  **Add your specification to the `SPECS` array.** 
+    The array contains `SpecConfig` objects. You need to provide:
+    - `url`: The public URL of the specification.
+    - `type`: A unique identifier for the spec (e.g., `"new-module"`).
+    - `rootId` (optional): If the WebDriver-relevant parts are a subset of the page, provide the `id` of the heading where the parsing should start.
+
+    ```typescript
+    const SPECS: SpecConfig[] = [
+      // ... existing specs
+      { 
+        url: "https://example.com/spec", 
+        type: "my-new-spec",
+        rootId: "automated-testing" // Only ingest sections under this heading
+      },
+    ];
+    ```
+
+3.  **Run the ingestion script:**
+    ```bash
+    npm run ingest
+    ```
+
+The script will fetch the new spec, parse its headings, generate embeddings, and add it to the vector store.
+
+## Troubleshooting
+
+### Unavailable Models
+If the project fails with an error indicating that a Gemini model (e.g., `text-embedding-004`) is not found or supported, it likely means the model has been deprecated or is unavailable in your region.
+
+To fix this:
+1.  **Open `src/lib/gemini.ts`.**
+2.  **Update `EMBEDDING_MODELS` or `GENERATIVE_MODELS`:** Add a currently available model to the beginning of the respective array. You can find available models by running a script that calls the Gemini API's `listModels` method or by checking the [Google AI documentation](https://ai.google.dev/gemini-api/docs/models/gemini).
+3.  **Re-run the ingestion:** If you changed the embedding model, you must run `npm run ingest` again to re-index the specifications.
