@@ -62,21 +62,27 @@ The server exposes the following tools:
 
 6.  **Configure MCP Client:**
 
-    Add the server configuration to your MCP client settings (e.g., `~/.gemini/settings.json` or `claude_desktop_config.json`).
+    For **Jetski CLI** (which supersedes legacy Gemini CLI), add the server configuration to your dedicated MCP configuration file at **`~/.gemini/jetski/mcp_config.json`** (or globally at `~/.gemini/config/mcp_config.json`). Note that legacy Gemini CLI setups using `~/.gemini/settings.json` have been deprecated.
 
     Make sure to replace `<PATH_TO_REPO>` with the absolute path to this repository.
 
     ```json
-    "webdriver-spec": {
-      "command": "node",
-      "args": [
-        "<PATH_TO_REPO>/build/src/index.js"
-      ],
-      "env": {
-        "GEMINI_API_KEY": "<YOUR_GEMINI_API_KEY>"
+    {
+      "mcpServers": {
+        "webdriver-spec": {
+          "command": "node",
+          "args": [
+            "<PATH_TO_REPO>/build/src/index.js"
+          ],
+          "env": {
+            "GEMINI_API_KEY": "<YOUR_GEMINI_API_KEY>"
+          }
+        }
       }
     }
     ```
+
+    For other clients like Claude Desktop (`claude_desktop_config.json`), place the `"webdriver-spec"` configuration object inside `"mcpServers"`.
 
 ## Architecture
 
