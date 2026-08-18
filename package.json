@@ -2,11 +2,11 @@
   "name": "webdriver-spec-mcp",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "build/src/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsx scripts/ingest-specs.ts && tsc",
-    "start": "node build/index.js",
+    "build": "tsc",
+    "start": "node build/src/index.js",
     "dev": "tsx src/index.ts",
     "ingest": "tsx scripts/ingest-specs.ts"
   },
