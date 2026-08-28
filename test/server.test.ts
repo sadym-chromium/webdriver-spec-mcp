@@ -169,6 +169,28 @@ describe("WebDriver Spec MCP Server", () => {
         "Expected non-empty spec section text"
       );
 
+      // 5. Call search_specs tool for "store WebDriver configuration"
+      const configSearchResponse = await sendRequest({
+        jsonrpc: "2.0",
+        id: 5,
+        method: "tools/call",
+        params: {
+          name: "search_specs",
+          arguments: {
+            query: "store WebDriver configuration",
+          },
+        },
+      });
+
+      assert.equal(configSearchResponse.jsonrpc, "2.0");
+      assert.equal(configSearchResponse.id, 5);
+      const configSearchResult = configSearchResponse.result as any;
+      const parsedConfigResults = JSON.parse(configSearchResult.content[0].text);
+      assert.ok(
+        parsedConfigResults.some((r: any) => r.title.includes("Infrastructure")),
+        "Expected Infrastructure in store WebDriver configuration search results"
+      );
+
       // Verify all lines on stdout are strictly valid JSON
       for (const line of stdoutLines) {
         assert.doesNotThrow(
@@ -199,16 +221,31 @@ describe("WebDriver Spec MCP Server", () => {
     );
   });
 
-  it("should query store by vector and url", async () => {
+  it("should perform hybrid search on exact terms and compound questions", async () => {
     const store = new Store();
     const embedder = Embedder.getInstance();
-    const vector = await embedder.embed("emulation.setMediaFeaturesOverride");
-    const searchResults = await store.search(vector, 3);
-    assert.ok(searchResults.length > 0, "Store search should return results");
 
-    const firstUrl = searchResults[0].url;
-    const section = await store.getByUrl(firstUrl);
-    assert.ok(section, "Store getByUrl should return section");
-    assert.equal(section?.url, firstUrl);
+    // 1. "store WebDriver configuration"
+    const vecConfig = await embedder.embed("store WebDriver configuration");
+    const configResults = await store.search("store WebDriver configuration", vecConfig, 5);
+    assert.ok(configResults.length > 0, "Expected search results");
+    assert.ok(
+      configResults.some((r) => r.title.includes("Infrastructure")),
+      "Expected 2. Infrastructure in top results for store WebDriver configuration"
+    );
+
+    // 2. Compound question
+    const compoundQuery =
+      "In WebDriver BiDi emulation.setMediaFeaturesOverride command, what happens if contexts and userContexts are omitted? How does \"store WebDriver configuration\" work with command parameters?";
+    const vecCompound = await embedder.embed(compoundQuery);
+    const compoundResults = await store.search(compoundQuery, vecCompound, 5);
+    assert.ok(
+      compoundResults.some((r) => r.title.includes("setMediaFeaturesOverride")),
+      "Expected setMediaFeaturesOverride in top results for compound question"
+    );
+    assert.ok(
+      compoundResults.some((r) => r.title.includes("Infrastructure")),
+      "Expected Infrastructure in top results for compound question"
+    );
   });
 });

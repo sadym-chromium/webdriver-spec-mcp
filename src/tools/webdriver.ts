@@ -17,7 +17,7 @@ export function registerWebDriverTools(server: McpServer) {
       const store = new Store();
       const embedder = Embedder.getInstance();
       const vector = await embedder.embed(query);
-      const results = await store.search(vector);
+      const results = await store.search(query, vector, 5);
 
       return {
         content: [
@@ -72,7 +72,7 @@ export function registerWebDriverTools(server: McpServer) {
       const store = new Store();
       const embedder = Embedder.getInstance();
       const vector = await embedder.embed(question);
-      const results = await store.search(vector, 3); // Get top 3 results
+      const results = await store.search(question, vector, 6);
 
       const context = results.map(r => `Title: ${r.title}\nContent: ${r.content}`).join("\n\n");
       
