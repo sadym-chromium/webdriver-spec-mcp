@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { pipeline } from "@huggingface/transformers";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const API_KEY = process.env.GEMINI_API_KEY;
 
