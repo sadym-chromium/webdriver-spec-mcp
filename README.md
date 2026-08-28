@@ -1,14 +1,14 @@
 # WebDriver Spec MCP Server
 
-This is a Model Context Protocol (MCP) server that provides access to the WebDriver BiDi and Classic specifications. It uses Retrieval-Augmented Generation (RAG) powered by Google's Gemini models to allow you to search, read, and ask questions about the WebDriver specs.
+This is a Model Context Protocol (MCP) server that provides access to the WebDriver BiDi and Classic specifications. It is designed for **Jetski** and other MCP clients to search and read authoritative sections from the WebDriver specs.
 
 ## Features
 
 - **Ingest WebDriver Specs**: Fetches and parses the latest WebDriver BiDi and Classic specifications from W3C.
-- **Semantic Search**: Search for relevant sections in the specs using natural language queries (`search_specs`).
+- **Semantic Search**: Search for relevant sections in the specs using natural language queries (`search_specs`) powered by local vector embeddings.
 - **Read Specs**: Retrieve the full content of specific sections (`read_spec_section`).
-- **Q&A**: Ask questions about the specs and get AI-generated answers based on the documentation (`ask_webdriver`).
 - **Vector Storage**: Uses [LanceDB](https://lancedb.com/) for efficient local vector storage.
+- **Local Embeddings**: Embeddings run locally on CPU via `@huggingface/transformers` (`Xenova/all-MiniLM-L6-v2`), requiring no external API keys for core operations.
 
 ## Tools
 
@@ -21,11 +21,6 @@ The server exposes the following tools:
 - `ask_webdriver`: Ask a question about WebDriver specs.
   - Arguments: `question` (string)
 
-## Prerequisites
-
-- Node.js (v20 or higher recommended)
-- A Google Gemini API Key
-
 ## Installation
 
 1.  **Clone the repository.**
@@ -36,23 +31,15 @@ The server exposes the following tools:
     npm install
     ```
 
-3.  **Configure environment:**
+3.  **Ingest data:**
 
-    Create a `.env` file in the root directory and add your Gemini API Key. This is required for the ingestion script to work.
-
-    ```env
-    GEMINI_API_KEY=your_gemini_api_key_here
-    ```
-
-4.  **Ingest data:**
-
-    Before using the server, you need to ingest the WebDriver specifications into the local vector store. This script fetches the specs, generates embeddings, and stores them in `.mcp-data/lancedb`.
+    Before using the server, ingest the WebDriver specifications into the local vector store. This script fetches the specs, generates embeddings, and stores them in `.mcp-data`.
 
     ```bash
     npm run ingest
     ```
 
-5.  **Build the project:**
+4.  **Build the project:**
 
     Compile the TypeScript code:
 
@@ -60,11 +47,19 @@ The server exposes the following tools:
     npm run build
     ```
 
+5.  **Run tests:**
+
+    Verify stdio communication, tool listing, and vector querying:
+
+    ```bash
+    npm test
+    ```
+
 6.  **Configure MCP Client:**
 
-    For **Jetski CLI** (which supersedes legacy Gemini CLI), add the server configuration to your dedicated MCP configuration file at **`~/.gemini/jetski/mcp_config.json`** (or globally at `~/.gemini/config/mcp_config.json`). Note that legacy Gemini CLI setups using `~/.gemini/settings.json` have been deprecated.
+    For **Jetski CLI**, add the server configuration to your dedicated MCP configuration file at **`~/.gemini/jetski/mcp_config.json`** (or globally at `~/.gemini/config/mcp_config.json`).
 
-    Make sure to replace `<PATH_TO_REPO>` with the absolute path to this repository.
+    Make sure to replace `<PATH_TO_REPO>` with the absolute path to this repository:
 
     ```json
     {
@@ -73,10 +68,7 @@ The server exposes the following tools:
           "command": "node",
           "args": [
             "<PATH_TO_REPO>/build/src/index.js"
-          ],
-          "env": {
-            "GEMINI_API_KEY": "<YOUR_GEMINI_API_KEY>"
-          }
+          ]
         }
       }
     }
@@ -86,10 +78,12 @@ The server exposes the following tools:
 
 ## Architecture
 
-- **`scripts/ingest-specs.ts`**: Fetches HTML from W3C, parses it into sections using `jsdom`, generates embeddings using `text-embedding-004`, and stores them in LanceDB.
-- **`src/tools/webdriver.ts`**: Defines the MCP tools for searching and querying the data.
-- **`src/lib/store.ts`**: Handles interactions with LanceDB.
-- **`src/lib/gemini.ts`**: Handles interactions with the Google Generative AI API.
+- **`src/index.ts`**: Main entrypoint setting up the MCP server over stdio.
+- **`src/tools/webdriver.ts`**: Defines the MCP tools (`search_specs`, `read_spec_section`, `ask_webdriver`).
+- **`src/lib/store.ts`**: Handles vector search and document lookup with LanceDB.
+- **`src/lib/embedder.ts`**: Generates text embeddings using local transformer models.
+- **`scripts/ingest-specs.ts`**: Fetches HTML from W3C, parses sections with `jsdom`, generates embeddings, and indexes them into LanceDB.
+- **`test/server.test.ts`**: Integration test verifying clean JSON-RPC stdio communication and vector querying.
 
 ## Adding a New Specification
 
@@ -117,15 +111,3 @@ To add a new specification that contains WebDriver BiDi or Classic endpoints, fo
     ```bash
     npm run ingest
     ```
-
-The script will fetch the new spec, parse its headings, generate embeddings, and add it to the vector store.
-
-## Troubleshooting
-
-### Unavailable Models
-If the project fails with an error indicating that a Gemini model (e.g., `text-embedding-004`) is not found or supported, it likely means the model has been deprecated or is unavailable in your region.
-
-To fix this:
-1.  **Open `src/lib/gemini.ts`.**
-2.  **Update `EMBEDDING_MODELS` or `GENERATIVE_MODELS`:** Add a currently available model to the beginning of the respective array. You can find available models by running a script that calls the Gemini API's `listModels` method or by checking the [Google AI documentation](https://ai.google.dev/gemini-api/docs/models/gemini).
-3.  **Re-run the ingestion:** If you changed the embedding model, you must run `npm run ingest` again to re-index the specifications.

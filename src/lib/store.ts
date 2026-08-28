@@ -6,7 +6,26 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATA_DIR = path.resolve(process.cwd(), ".mcp-data");
+function getDataDir(): string {
+  if (process.env.MCP_DATA_DIR) {
+    return process.env.MCP_DATA_DIR;
+  }
+  let currentDir = __dirname;
+  while (currentDir !== path.dirname(currentDir)) {
+    const candidate = path.join(currentDir, ".mcp-data");
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+    const pkgJson = path.join(currentDir, "package.json");
+    if (fs.existsSync(pkgJson)) {
+      return path.join(currentDir, ".mcp-data");
+    }
+    currentDir = path.dirname(currentDir);
+  }
+  return path.resolve(__dirname, "../../.mcp-data");
+}
+
+const DATA_DIR = getDataDir();
 
 export interface SpecSection {
   id: string;
